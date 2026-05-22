@@ -140,7 +140,7 @@ def add_my_ip_to_security_group(
 def remove_ip_from_security_group(
     security_group_id: str,
     cidr: str,
-    port: int,
+    port: str,
     protocol: str = "tcp",
     region: str = "ap-northeast-2",
 ) -> str:
@@ -149,21 +149,27 @@ def remove_ip_from_security_group(
     Args:
         security_group_id: Security group ID
         cidr: CIDR to remove (e.g. 1.2.3.4/32)
-        port: Port number
+        port: Port number or range (e.g. 22, 0-65535)
         protocol: Protocol (tcp / udp)
         region: AWS region
     """
     ec2 = _ec2(region)
+    port_str = str(port)
+    if "-" in port_str:
+        from_port, to_port = [int(p) for p in port_str.split("-", 1)]
+    else:
+        from_port = to_port = int(port_str)
     ec2.revoke_security_group_ingress(
         GroupId=security_group_id,
         IpPermissions=[{
             "IpProtocol": protocol,
-            "FromPort": port,
-            "ToPort": port,
+            "FromPort": from_port,
+            "ToPort": to_port,
             "IpRanges": [{"CidrIp": cidr}],
         }],
     )
-    return json.dumps({"status": "success", "message": f"Removed {cidr} port {port}/{protocol} rule"}, ensure_ascii=False)
+    port_label = port_str if from_port != to_port else str(from_port)
+    return json.dumps({"status": "success", "message": f"Removed {cidr} port {port_label}/{protocol} rule"}, ensure_ascii=False)
 
 
 @mcp.tool()
