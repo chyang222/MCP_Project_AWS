@@ -1,6 +1,105 @@
-# AWS MCP Server
+# claude-aws-mcp
 
-An MCP server that lets you control AWS resources directly from Claude Desktop or Claude Code.
+[![PyPI version](https://img.shields.io/pypi/v/claude-aws-mcp)](https://pypi.org/project/claude-aws-mcp/)
+[![Python](https://img.shields.io/pypi/pyversions/claude-aws-mcp)](https://pypi.org/project/claude-aws-mcp/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+An MCP server that lets you control AWS resources directly from **Claude Desktop** or **Claude Code** using natural language.
+
+---
+
+## Installation
+
+```cmd
+pip install claude-aws-mcp
+```
+
+> Requires Python 3.10 or higher.
+
+---
+
+## Quick Start (Windows)
+
+### Prerequisites
+
+- [Python 3.10+](https://www.python.org/downloads/) — check **"Add Python to PATH"** during install
+- [Git](https://git-scm.com/download/win)
+
+### 1. Install the package
+
+```cmd
+pip install claude-aws-mcp
+```
+
+### 2. Create a `.env` file
+
+Create a file named `.env` in your working directory:
+
+```env
+AWS_ACCESS_KEY_ID=your_access_key
+AWS_SECRET_ACCESS_KEY=your_secret_key
+AWS_DEFAULT_REGION=ap-northeast-2
+```
+
+### 3. Run the server
+
+```cmd
+aws-mcp
+```
+
+---
+
+## Claude Desktop Integration
+
+Config file location:
+
+| OS | Path |
+|----|------|
+| Windows | `%APPDATA%\Claude\claude_desktop_config.json` |
+| Mac | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+
+> On Windows, paste `%APPDATA%\Claude\` into the Explorer address bar to navigate there directly.
+
+Add the following to `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "aws": {
+      "command": "aws-mcp",
+      "env": {
+        "AWS_ACCESS_KEY_ID": "your_access_key",
+        "AWS_SECRET_ACCESS_KEY": "your_secret_key",
+        "AWS_DEFAULT_REGION": "ap-northeast-2"
+      }
+    }
+  }
+}
+```
+
+Restart Claude Desktop — the AWS tools will appear automatically.
+
+---
+
+## Claude Code Integration
+
+```cmd
+claude mcp add aws aws-mcp
+```
+
+Or add directly to `.claude\settings.json`:
+
+```json
+{
+  "mcpServers": {
+    "aws": {
+      "command": "aws-mcp"
+    }
+  }
+}
+```
+
+---
 
 ## Available Tools
 
@@ -10,7 +109,7 @@ An MCP server that lets you control AWS resources directly from Claude Desktop o
 | `list_security_groups` | List all security groups with inbound/outbound rules |
 | `get_my_public_ip` | Get the current public IP address |
 | `add_my_ip_to_security_group` | Add current IP to a specified security group |
-| `remove_ip_from_security_group` | Remove a specific CIDR rule from a security group |
+| `remove_ip_from_security_group` | Remove a specific CIDR rule from a security group (supports port ranges, e.g. `0-65535`) |
 | `create_security_group` | Create a new security group |
 
 ### EC2 Instances
@@ -68,130 +167,59 @@ An MCP server that lets you control AWS resources directly from Claude Desktop o
 
 ---
 
-## Installation & Setup (Windows)
+## Example Prompts
 
-### Prerequisites
-
-- [Python 3.10+](https://www.python.org/downloads/) (check **"Add Python to PATH"** during install)
-- [Git](https://git-scm.com/download/win)
-
-### 1. Clone the repository
-
-Open Command Prompt or PowerShell and run:
-
-```cmd
-git clone https://github.com/chyang222/MCP_Project_AWS.git
-cd MCP_Project_AWS
-```
-
-### 2. Configure environment variables
-
-```cmd
-copy .env.example .env
-```
-
-Open `.env` in a text editor and fill in your AWS credentials:
-
-```env
-AWS_ACCESS_KEY_ID=your_access_key
-AWS_SECRET_ACCESS_KEY=your_secret_key
-AWS_DEFAULT_REGION=ap-northeast-2
-```
-
-### 3. Install dependencies
-
-```cmd
-pip install -r requirements.txt
-```
-
-### 4. Test the server
-
-```cmd
-python server.py
-```
-
-You should see `MCP server running...` if everything is working.
-
----
-
-## Claude Desktop Integration
-
-Config file path (Windows):
-
-```
-%APPDATA%\Claude\claude_desktop_config.json
-```
-
-> Paste `%APPDATA%\Claude\` into the Explorer address bar to navigate there directly.
-
-Add the following to `claude_desktop_config.json`:
-
-```json
-{
-  "mcpServers": {
-    "aws": {
-      "command": "python",
-      "args": ["C:\\Users\\<your-username>\\MCP_Project_AWS\\server.py"],
-      "env": {
-        "AWS_ACCESS_KEY_ID": "your_access_key",
-        "AWS_SECRET_ACCESS_KEY": "your_secret_key",
-        "AWS_DEFAULT_REGION": "ap-northeast-2"
-      }
-    }
-  }
-}
-```
-
-> Replace `C:\\Users\\<your-username>\\MCP_Project_AWS\\` with your actual clone path.  
-> Use double backslashes (`\\`) in JSON paths.
-
----
-
-## Claude Code Integration
-
-```cmd
-claude mcp add aws python C:\Users\<your-username>\MCP_Project_AWS\server.py
-```
-
-Or add directly to `.claude\settings.json`:
-
-```json
-{
-  "mcpServers": {
-    "aws": {
-      "command": "python",
-      "args": ["C:\\Users\\<your-username>\\MCP_Project_AWS\\server.py"]
-    }
-  }
-}
-```
-
----
-
-## Usage Examples
+Once connected to Claude, just type naturally:
 
 ```
 Show me all security groups
-Add my IP to security group sg-0abc1234 on port 22
+Add my current IP to sg-0abc1234 on port 22
+Remove 0.0.0.0/0 from sg-0abc1234 on port range 0-65535
 List all running EC2 instances
-Create a t3.micro instance
 Stop instance i-0abc1234
+Create a t3.micro instance
+List all S3 buckets
+Generate a presigned URL for my-bucket/report.pdf
+Ask Claude via Bedrock: "Summarize the AWS Well-Architected Framework"
 ```
+
+---
+
+## IAM Permissions
+
+Your AWS IAM user needs the following policies:
+
+| Service | Recommended Policy |
+|---|---|
+| EC2 / Security Groups | `AmazonEC2FullAccess` |
+| S3 | `AmazonS3FullAccess` |
+| Bedrock | `AmazonBedrockFullAccess` |
 
 ---
 
 ## Troubleshooting
 
-**`python` not found**
-- Make sure "Add Python to PATH" was checked during installation
-- Close and reopen CMD, then verify with `python --version`
+**`aws-mcp` command not found after install**
+- Close and reopen CMD, then retry
+- Or run: `python -m aws_mcp.server`
 
-**`pip install` errors**
+**`pip` errors**
 ```cmd
 python -m pip install --upgrade pip
-pip install -r requirements.txt
+pip install claude-aws-mcp
 ```
 
 **AWS authentication errors**
-- Verify the key values in your `.env` file are correct
+- Check that your `.env` values are correct
 - Confirm the IAM user has the required permissions
+
+**Python not found**
+- Reinstall Python and make sure **"Add Python to PATH"** is checked
+- Verify with: `python --version`
+
+---
+
+## Links
+
+- **PyPI:** https://pypi.org/project/claude-aws-mcp/
+- **GitHub:** https://github.com/chyang222/MCP_Project_AWS
