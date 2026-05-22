@@ -66,33 +66,75 @@ Claude Desktop / Claude Code에서 AWS 리소스를 직접 제어할 수 있는 
 | `list_vpcs` | VPC + 서브넷 목록 |
 | `list_available_amis` | 최신 공식 AMI 목록 (Amazon Linux / Ubuntu / Windows) |
 
-## 설치 및 실행
+---
 
-```bash
-# 1. 환경변수 설정
-cp .env.example .env
-# .env 파일을 열어 AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY 입력
+## 설치 및 실행 (Windows 기준)
 
-# 2. 의존성 설치
+### 사전 요구사항
+
+- [Python 3.10 이상](https://www.python.org/downloads/) (설치 시 **"Add Python to PATH"** 체크 필수)
+- [Git](https://git-scm.com/download/win)
+
+### 1. 프로젝트 클론
+
+명령 프롬프트(CMD) 또는 PowerShell을 열고 실행:
+
+```cmd
+git clone https://github.com/chyang222/MCP_Project_AWS.git
+cd MCP_Project_AWS
+```
+
+### 2. 환경변수 설정
+
+```cmd
+copy .env.example .env
+```
+
+`.env` 파일을 메모장으로 열어 AWS 키를 입력:
+
+```env
+AWS_ACCESS_KEY_ID=your_access_key
+AWS_SECRET_ACCESS_KEY=your_secret_key
+AWS_DEFAULT_REGION=ap-northeast-2
+```
+
+### 3. 의존성 설치
+
+```cmd
 pip install -r requirements.txt
+```
 
-# 3. 서버 실행 테스트
+### 4. 서버 실행 테스트
+
+```cmd
 python server.py
 ```
 
+정상 실행 시 `MCP server running...` 메시지가 출력됩니다.
+
+---
+
 ## Claude Desktop 연동 설정
 
-`~/.config/claude/claude_desktop_config.json` (Mac: `~/Library/Application Support/Claude/claude_desktop_config.json`):
+설정 파일 경로 (Windows):
+
+```
+%APPDATA%\Claude\claude_desktop_config.json
+```
+
+> 탐색기 주소창에 `%APPDATA%\Claude\` 를 입력하면 바로 이동할 수 있습니다.
+
+`claude_desktop_config.json` 파일을 열어 아래 내용을 추가:
 
 ```json
 {
   "mcpServers": {
     "aws": {
       "command": "python",
-      "args": ["/home/dev/project/mcp/aws_mcp/server.py"],
+      "args": ["C:\\Users\\사용자이름\\MCP_Project_AWS\\server.py"],
       "env": {
-        "AWS_ACCESS_KEY_ID": "your_key",
-        "AWS_SECRET_ACCESS_KEY": "your_secret",
+        "AWS_ACCESS_KEY_ID": "your_access_key",
+        "AWS_SECRET_ACCESS_KEY": "your_secret_key",
         "AWS_DEFAULT_REGION": "ap-northeast-2"
       }
     }
@@ -100,24 +142,31 @@ python server.py
 }
 ```
 
+> `C:\\Users\\사용자이름\\MCP_Project_AWS\\` 부분을 실제 클론한 경로로 변경하세요.  
+> 경로에서 역슬래시(`\`)는 반드시 `\\`로 두 번 입력해야 합니다.
+
+---
+
 ## Claude Code 연동 설정
 
-```bash
-claude mcp add aws python3.13 /home/dev/project/mcp/aws_mcp/server.py
+```cmd
+claude mcp add aws python C:\Users\사용자이름\MCP_Project_AWS\server.py
 ```
 
-또는 `.claude/settings.json`에 추가:
+또는 `.claude\settings.json`에 직접 추가:
 
 ```json
 {
   "mcpServers": {
     "aws": {
-      "command": "python3.13",
-      "args": ["/home/dev/project/mcp/aws_mcp/server.py"]
+      "command": "python",
+      "args": ["C:\\Users\\사용자이름\\MCP_Project_AWS\\server.py"]
     }
   }
 }
 ```
+
+---
 
 ## 사용 예시
 
@@ -128,3 +177,21 @@ claude mcp add aws python3.13 /home/dev/project/mcp/aws_mcp/server.py
 t3.micro 인스턴스 하나 만들어줘
 i-0abc1234 인스턴스 중지해줘
 ```
+
+---
+
+## 문제 해결
+
+**`python`을 찾을 수 없다는 오류가 날 때**
+- Python 설치 시 "Add Python to PATH" 옵션이 체크됐는지 확인
+- CMD를 껐다가 다시 열어서 `python --version` 으로 확인
+
+**`pip install` 오류가 날 때**
+```cmd
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+**AWS 인증 오류가 날 때**
+- `.env` 파일의 키 값이 올바른지 확인
+- IAM 사용자에게 필요한 권한이 부여됐는지 확인
