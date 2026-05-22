@@ -37,7 +37,7 @@ def _get_my_ip() -> str:
             return r.text.strip()
         except Exception:
             continue
-    raise RuntimeError("현재 공인 IP를 가져올 수 없습니다.")
+    raise RuntimeError("Unable to retrieve current public IP.")
 
 
 def _name_tag(tags) -> str:
@@ -71,7 +71,7 @@ def _fmt_rules(rules: list) -> list:
 
 @mcp.tool()
 def list_security_groups(region: str = "ap-northeast-2") -> str:
-    """현재 AWS 계정의 모든 보안그룹 목록과 인바운드/아웃바운드 규칙을 조회합니다."""
+    """List all security groups in the AWS account with inbound and outbound rules."""
     ec2 = _ec2(region)
     resp = ec2.describe_security_groups()
     result = []
@@ -89,7 +89,7 @@ def list_security_groups(region: str = "ap-northeast-2") -> str:
 
 @mcp.tool()
 def get_my_public_ip() -> str:
-    """현재 이 서버의 공인 IP 주소를 반환합니다."""
+    """Return the current public IP address of this machine."""
     ip = _get_my_ip()
     return json.dumps({"public_ip": ip})
 
@@ -102,14 +102,14 @@ def add_my_ip_to_security_group(
     description: str = "Added by AWS MCP",
     region: str = "ap-northeast-2",
 ) -> str:
-    """현재 공인 IP를 지정한 보안그룹의 인바운드 규칙에 추가합니다.
+    """Add the current public IP as an inbound rule to the specified security group.
 
     Args:
-        security_group_id: 보안그룹 ID (예: sg-0abc1234)
-        port: 허용할 포트 번호 (예: 22, 3389, 443)
-        protocol: 프로토콜 (tcp / udp / icmp)
-        description: 규칙 설명
-        region: AWS 리전
+        security_group_id: Security group ID (e.g. sg-0abc1234)
+        port: Port number to allow (e.g. 22, 3389, 443)
+        protocol: Protocol (tcp / udp / icmp)
+        description: Rule description
+        region: AWS region
     """
     ip = _get_my_ip()
     cidr = f"{ip}/32"
@@ -126,13 +126,13 @@ def add_my_ip_to_security_group(
         )
         return json.dumps({
             "status": "success",
-            "message": f"{cidr} → {security_group_id} 포트 {port}/{protocol} 추가 완료",
+            "message": f"Added {cidr} to {security_group_id} on port {port}/{protocol}",
             "ip": ip,
         }, ensure_ascii=False)
     except ec2.exceptions.ClientError as e:
         code = e.response["Error"]["Code"]
         if code == "InvalidPermission.Duplicate":
-            return json.dumps({"status": "already_exists", "message": f"{cidr}은 이미 규칙에 존재합니다.", "ip": ip}, ensure_ascii=False)
+            return json.dumps({"status": "already_exists", "message": f"{cidr} already exists in the rule set.", "ip": ip}, ensure_ascii=False)
         raise
 
 
@@ -144,14 +144,14 @@ def remove_ip_from_security_group(
     protocol: str = "tcp",
     region: str = "ap-northeast-2",
 ) -> str:
-    """보안그룹에서 특정 CIDR IP 규칙을 제거합니다.
+    """Remove a specific CIDR IP rule from a security group.
 
     Args:
-        security_group_id: 보안그룹 ID
-        cidr: 제거할 CIDR (예: 1.2.3.4/32)
-        port: 포트 번호
-        protocol: 프로토콜 (tcp / udp)
-        region: AWS 리전
+        security_group_id: Security group ID
+        cidr: CIDR to remove (e.g. 1.2.3.4/32)
+        port: Port number
+        protocol: Protocol (tcp / udp)
+        region: AWS region
     """
     ec2 = _ec2(region)
     ec2.revoke_security_group_ingress(
@@ -163,7 +163,7 @@ def remove_ip_from_security_group(
             "IpRanges": [{"CidrIp": cidr}],
         }],
     )
-    return json.dumps({"status": "success", "message": f"{cidr} 포트 {port}/{protocol} 규칙 제거 완료"}, ensure_ascii=False)
+    return json.dumps({"status": "success", "message": f"Removed {cidr} port {port}/{protocol} rule"}, ensure_ascii=False)
 
 
 @mcp.tool()
@@ -173,13 +173,13 @@ def create_security_group(
     vpc_id: Optional[str] = None,
     region: str = "ap-northeast-2",
 ) -> str:
-    """새 보안그룹을 생성합니다.
+    """Create a new security group.
 
     Args:
-        name: 보안그룹 이름
-        description: 보안그룹 설명
-        vpc_id: VPC ID (None이면 기본 VPC 사용)
-        region: AWS 리전
+        name: Security group name
+        description: Security group description
+        vpc_id: VPC ID (uses default VPC if not specified)
+        region: AWS region
     """
     ec2 = _ec2(region)
     kwargs = {"GroupName": name, "Description": description}
@@ -200,11 +200,11 @@ def list_ec2_instances(
     region: str = "ap-northeast-2",
     state: str = "all",
 ) -> str:
-    """EC2 인스턴스 목록과 상태, IP, 인스턴스 타입 등을 조회합니다.
+    """List EC2 instances with their state, IP addresses, and instance type.
 
     Args:
-        region: AWS 리전
-        state: 필터 상태 (all / running / stopped / pending / terminated)
+        region: AWS region
+        state: Filter by state (all / running / stopped / pending / terminated)
     """
     ec2 = _ec2(region)
     filters = []
@@ -239,11 +239,11 @@ def get_instance_details(
     instance_id: str,
     region: str = "ap-northeast-2",
 ) -> str:
-    """특정 EC2 인스턴스의 상세 정보를 조회합니다.
+    """Get detailed information about a specific EC2 instance.
 
     Args:
-        instance_id: 인스턴스 ID (예: i-0abc1234)
-        region: AWS 리전
+        instance_id: Instance ID (e.g. i-0abc1234)
+        region: AWS region
     """
     ec2 = _ec2(region)
     resp = ec2.describe_instances(InstanceIds=[instance_id])
@@ -278,11 +278,11 @@ def start_ec2_instance(
     instance_id: str,
     region: str = "ap-northeast-2",
 ) -> str:
-    """중지된 EC2 인스턴스를 시작합니다.
+    """Start a stopped EC2 instance.
 
     Args:
-        instance_id: 인스턴스 ID
-        region: AWS 리전
+        instance_id: Instance ID
+        region: AWS region
     """
     ec2 = _ec2(region)
     resp = ec2.start_instances(InstanceIds=[instance_id])
@@ -295,11 +295,11 @@ def stop_ec2_instance(
     instance_id: str,
     region: str = "ap-northeast-2",
 ) -> str:
-    """실행 중인 EC2 인스턴스를 중지합니다.
+    """Stop a running EC2 instance.
 
     Args:
-        instance_id: 인스턴스 ID
-        region: AWS 리전
+        instance_id: Instance ID
+        region: AWS region
     """
     ec2 = _ec2(region)
     resp = ec2.stop_instances(InstanceIds=[instance_id])
@@ -312,15 +312,15 @@ def reboot_ec2_instance(
     instance_id: str,
     region: str = "ap-northeast-2",
 ) -> str:
-    """EC2 인스턴스를 재부팅합니다.
+    """Reboot an EC2 instance.
 
     Args:
-        instance_id: 인스턴스 ID
-        region: AWS 리전
+        instance_id: Instance ID
+        region: AWS region
     """
     ec2 = _ec2(region)
     ec2.reboot_instances(InstanceIds=[instance_id])
-    return json.dumps({"status": "success", "message": f"{instance_id} 재부팅 요청 완료"}, ensure_ascii=False)
+    return json.dumps({"status": "success", "message": f"Reboot requested for {instance_id}"}, ensure_ascii=False)
 
 
 @mcp.tool()
@@ -334,17 +334,17 @@ def create_ec2_instance(
     region: str = "ap-northeast-2",
     user_data: str = "",
 ) -> str:
-    """새 EC2 인스턴스를 생성합니다.
+    """Launch a new EC2 instance.
 
     Args:
-        ami_id: AMI ID (예: ami-0c2d3e23e757b5d84)
-        instance_type: 인스턴스 타입 (예: t3.micro, t3.small)
-        key_name: 키페어 이름
-        security_group_ids: 보안그룹 ID, 여러 개는 쉼표로 구분 (예: sg-111,sg-222)
-        name: 인스턴스 이름 태그
-        subnet_id: 서브넷 ID (비워두면 기본 서브넷 사용)
-        region: AWS 리전
-        user_data: 인스턴스 시작 시 실행할 shell 스크립트 (선택)
+        ami_id: AMI ID (e.g. ami-0c2d3e23e757b5d84)
+        instance_type: Instance type (e.g. t3.micro, t3.small)
+        key_name: Key pair name
+        security_group_ids: Security group IDs, comma-separated (e.g. sg-111,sg-222)
+        name: Instance name tag
+        subnet_id: Subnet ID (uses default subnet if not specified)
+        region: AWS region
+        user_data: Shell script to run on launch (optional)
     """
     ec2 = _ec2(region)
     sg_ids = [s.strip() for s in security_group_ids.split(",") if s.strip()]
@@ -382,11 +382,11 @@ def terminate_ec2_instance(
     instance_id: str,
     region: str = "ap-northeast-2",
 ) -> str:
-    """EC2 인스턴스를 영구 삭제(terminate)합니다. 되돌릴 수 없습니다.
+    """Permanently terminate (delete) an EC2 instance. This action is irreversible.
 
     Args:
-        instance_id: 삭제할 인스턴스 ID
-        region: AWS 리전
+        instance_id: Instance ID to terminate
+        region: AWS region
     """
     ec2 = _ec2(region)
     resp = ec2.terminate_instances(InstanceIds=[instance_id])
@@ -395,12 +395,12 @@ def terminate_ec2_instance(
 
 
 # ---------------------------------------------------------------------------
-# VPC / Subnet / Key Pair tools (인스턴스 생성 전 확인용)
+# VPC / Subnet / Key Pair tools
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
 def list_key_pairs(region: str = "ap-northeast-2") -> str:
-    """사용 가능한 EC2 키페어 목록을 조회합니다."""
+    """List available EC2 key pairs."""
     ec2 = _ec2(region)
     resp = ec2.describe_key_pairs()
     result = [{"name": kp["KeyName"], "fingerprint": kp.get("KeyFingerprint", ""), "id": kp.get("KeyPairId", "")} for kp in resp["KeyPairs"]]
@@ -409,7 +409,7 @@ def list_key_pairs(region: str = "ap-northeast-2") -> str:
 
 @mcp.tool()
 def list_vpcs(region: str = "ap-northeast-2") -> str:
-    """VPC 목록과 서브넷 정보를 조회합니다."""
+    """List VPCs and their associated subnets."""
     ec2 = _ec2(region)
     vpcs_resp = ec2.describe_vpcs()
     subnets_resp = ec2.describe_subnets()
@@ -441,11 +441,11 @@ def list_available_amis(
     region: str = "ap-northeast-2",
     os_type: str = "amazon-linux",
 ) -> str:
-    """자주 사용하는 최신 공식 AMI 목록을 조회합니다.
+    """List the latest official AMIs for common OS types.
 
     Args:
-        region: AWS 리전
-        os_type: 조회할 OS 타입 (amazon-linux / ubuntu / windows)
+        region: AWS region
+        os_type: OS type to query (amazon-linux / ubuntu / windows)
     """
     ec2 = _ec2(region)
     filters_map = {
@@ -478,11 +478,11 @@ def get_instance_console_output(
     instance_id: str,
     region: str = "ap-northeast-2",
 ) -> str:
-    """EC2 인스턴스의 시스템 콘솔 출력(부팅 로그)을 가져옵니다.
+    """Get the system console output (boot log) of an EC2 instance.
 
     Args:
-        instance_id: 인스턴스 ID
-        region: AWS 리전
+        instance_id: Instance ID
+        region: AWS region
     """
     import base64
     ec2 = _ec2(region)
@@ -493,7 +493,7 @@ def get_instance_console_output(
             output = base64.b64decode(output).decode("utf-8", errors="replace")
         except Exception:
             pass
-    return json.dumps({"instance_id": instance_id, "output": output or "(출력 없음 - 인스턴스가 최근 시작되었거나 지원하지 않는 상태일 수 있음)"}, ensure_ascii=False)
+    return json.dumps({"instance_id": instance_id, "output": output or "(No output — instance may have started recently or console output is not supported in this state)"}, ensure_ascii=False)
 
 
 # ---------------------------------------------------------------------------
@@ -502,7 +502,7 @@ def get_instance_console_output(
 
 @mcp.tool()
 def list_elastic_ips(region: str = "ap-northeast-2") -> str:
-    """할당된 Elastic IP 목록과 연결된 인스턴스 정보를 조회합니다."""
+    """List allocated Elastic IPs and their associated instance information."""
     ec2 = _ec2(region)
     resp = ec2.describe_addresses()
     result = []
@@ -521,7 +521,7 @@ def list_elastic_ips(region: str = "ap-northeast-2") -> str:
 
 @mcp.tool()
 def allocate_elastic_ip(region: str = "ap-northeast-2") -> str:
-    """새 Elastic IP를 할당합니다."""
+    """Allocate a new Elastic IP address."""
     ec2 = _ec2(region)
     resp = ec2.allocate_address(Domain="vpc")
     return json.dumps({
@@ -537,12 +537,12 @@ def associate_elastic_ip(
     instance_id: str,
     region: str = "ap-northeast-2",
 ) -> str:
-    """Elastic IP를 EC2 인스턴스에 연결합니다.
+    """Associate an Elastic IP with an EC2 instance.
 
     Args:
-        allocation_id: EIP 할당 ID (예: eipalloc-0abc1234)
-        instance_id: 연결할 인스턴스 ID
-        region: AWS 리전
+        allocation_id: EIP allocation ID (e.g. eipalloc-0abc1234)
+        instance_id: Instance ID to associate with
+        region: AWS region
     """
     ec2 = _ec2(region)
     resp = ec2.associate_address(AllocationId=allocation_id, InstanceId=instance_id)
@@ -559,15 +559,15 @@ def disassociate_elastic_ip(
     association_id: str,
     region: str = "ap-northeast-2",
 ) -> str:
-    """Elastic IP와 인스턴스의 연결을 해제합니다.
+    """Disassociate an Elastic IP from an instance.
 
     Args:
-        association_id: EIP 연결 ID (예: eipassoc-0abc1234)
-        region: AWS 리전
+        association_id: EIP association ID (e.g. eipassoc-0abc1234)
+        region: AWS region
     """
     ec2 = _ec2(region)
     ec2.disassociate_address(AssociationId=association_id)
-    return json.dumps({"status": "success", "message": f"{association_id} 연결 해제 완료"}, ensure_ascii=False)
+    return json.dumps({"status": "success", "message": f"Disassociated {association_id}"}, ensure_ascii=False)
 
 
 @mcp.tool()
@@ -575,15 +575,15 @@ def release_elastic_ip(
     allocation_id: str,
     region: str = "ap-northeast-2",
 ) -> str:
-    """Elastic IP를 반납(해제)합니다. 더 이상 해당 IP를 소유하지 않습니다.
+    """Release (return) an Elastic IP address. You will no longer own this IP.
 
     Args:
-        allocation_id: EIP 할당 ID (예: eipalloc-0abc1234)
-        region: AWS 리전
+        allocation_id: EIP allocation ID (e.g. eipalloc-0abc1234)
+        region: AWS region
     """
     ec2 = _ec2(region)
     ec2.release_address(AllocationId=allocation_id)
-    return json.dumps({"status": "success", "message": f"{allocation_id} EIP 반납 완료"}, ensure_ascii=False)
+    return json.dumps({"status": "success", "message": f"Released EIP {allocation_id}"}, ensure_ascii=False)
 
 
 # ---------------------------------------------------------------------------
@@ -597,13 +597,13 @@ def get_ssh_command(
     username: str = "",
     region: str = "ap-northeast-2",
 ) -> str:
-    """EC2 인스턴스에 접속하기 위한 SSH 명령어를 생성합니다.
+    """Generate an SSH command for connecting to an EC2 instance.
 
     Args:
-        instance_id: 인스턴스 ID
-        key_path: 로컬 pem 키 파일 경로 (예: ~/.ssh/my-key.pem)
-        username: SSH 접속 유저명 (비워두면 AMI 기반으로 자동 추론)
-        region: AWS 리전
+        instance_id: Instance ID
+        key_path: Local path to the PEM key file (e.g. ~/.ssh/my-key.pem)
+        username: SSH username (auto-detected from AMI if not specified)
+        region: AWS region
     """
     ec2 = _ec2(region)
     resp = ec2.describe_instances(InstanceIds=[instance_id])
@@ -613,7 +613,6 @@ def get_ssh_command(
     state = inst["State"]["Name"]
 
     if not username:
-        # AMI 이름으로 유저 추론
         try:
             ami_resp = ec2.describe_images(ImageIds=[ami_id])
             ami_name = ami_resp["Images"][0]["Name"].lower() if ami_resp["Images"] else ""
@@ -639,7 +638,7 @@ def get_ssh_command(
         "ip": ip,
         "username": username,
         "state": state,
-        "note": "퍼블릭 IP가 없으면 VPN/Bastion을 통해 프라이빗 IP로 접속하세요." if not inst.get("PublicIpAddress") else "",
+        "note": "No public IP — connect via VPN or Bastion using the private IP." if not inst.get("PublicIpAddress") else "",
     }, ensure_ascii=False, indent=2)
 
 
@@ -650,13 +649,13 @@ def add_instance_tag(
     value: str,
     region: str = "ap-northeast-2",
 ) -> str:
-    """EC2 인스턴스에 태그를 추가하거나 값을 수정합니다.
+    """Add or update a tag on an EC2 instance.
 
     Args:
-        instance_id: 인스턴스 ID
-        key: 태그 키 (예: Name, Env, Owner)
-        value: 태그 값 (예: my-server, production, changhyuk)
-        region: AWS 리전
+        instance_id: Instance ID
+        key: Tag key (e.g. Name, Env, Owner)
+        value: Tag value (e.g. my-server, production, john)
+        region: AWS region
     """
     ec2 = _ec2(region)
     ec2.create_tags(Resources=[instance_id], Tags=[{"Key": key, "Value": value}])
@@ -669,12 +668,12 @@ def change_instance_type(
     new_instance_type: str,
     region: str = "ap-northeast-2",
 ) -> str:
-    """EC2 인스턴스 타입을 변경합니다. 실행 중이면 자동으로 중지 후 변경합니다.
+    """Change the instance type of an EC2 instance. Automatically stops the instance if running.
 
     Args:
-        instance_id: 인스턴스 ID
-        new_instance_type: 변경할 인스턴스 타입 (예: t3.medium, c5.large)
-        region: AWS 리전
+        instance_id: Instance ID
+        new_instance_type: Target instance type (e.g. t3.medium, c5.large)
+        region: AWS region
     """
     ec2 = _ec2(region)
     resp = ec2.describe_instances(InstanceIds=[instance_id])
@@ -687,17 +686,17 @@ def change_instance_type(
         ec2.stop_instances(InstanceIds=[instance_id])
         waiter = ec2.get_waiter("instance_stopped")
         waiter.wait(InstanceIds=[instance_id])
-        steps.append("인스턴스 중지 완료")
+        steps.append("Instance stopped")
 
     ec2.modify_instance_attribute(
         InstanceId=instance_id,
         InstanceType={"Value": new_instance_type},
     )
-    steps.append(f"타입 변경: {current_type} → {new_instance_type}")
+    steps.append(f"Type changed: {current_type} -> {new_instance_type}")
 
     if current_state == "running":
         ec2.start_instances(InstanceIds=[instance_id])
-        steps.append("인스턴스 재시작 완료")
+        steps.append("Instance restarted")
 
     return json.dumps({
         "status": "success",
@@ -724,7 +723,7 @@ def _s3(region: Optional[str] = None):
 
 @mcp.tool()
 def list_s3_buckets() -> str:
-    """S3 버킷 전체 목록과 생성일, 리전을 조회합니다."""
+    """List all S3 buckets with their creation date and region."""
     s3 = _s3()
     resp = s3.list_buckets()
     result = []
@@ -748,12 +747,12 @@ def list_s3_objects(
     prefix: str = "",
     max_keys: int = 50,
 ) -> str:
-    """S3 버킷 내 파일(오브젝트) 목록을 조회합니다.
+    """List objects in an S3 bucket.
 
     Args:
-        bucket: S3 버킷 이름
-        prefix: 경로 필터 (예: logs/ 또는 2024/)
-        max_keys: 최대 반환 개수 (기본 50)
+        bucket: S3 bucket name
+        prefix: Path filter (e.g. logs/ or 2024/)
+        max_keys: Maximum number of results to return (default 50)
     """
     s3 = _s3()
     kwargs = {"Bucket": bucket, "MaxKeys": max_keys}
@@ -784,11 +783,11 @@ def create_s3_bucket(
     bucket_name: str,
     region: str = "ap-northeast-2",
 ) -> str:
-    """새 S3 버킷을 생성합니다.
+    """Create a new S3 bucket.
 
     Args:
-        bucket_name: 생성할 버킷 이름 (전 세계 유일해야 함)
-        region: AWS 리전
+        bucket_name: Bucket name (must be globally unique)
+        region: AWS region
     """
     s3 = _s3(region)
     kwargs = {"Bucket": bucket_name}
@@ -803,15 +802,15 @@ def delete_s3_object(
     bucket: str,
     key: str,
 ) -> str:
-    """S3 버킷에서 특정 파일(오브젝트)을 삭제합니다.
+    """Delete a specific object from an S3 bucket.
 
     Args:
-        bucket: S3 버킷 이름
-        key: 삭제할 파일 경로 (예: logs/2024/app.log)
+        bucket: S3 bucket name
+        key: Object key path to delete (e.g. logs/2024/app.log)
     """
     s3 = _s3()
     s3.delete_object(Bucket=bucket, Key=key)
-    return json.dumps({"status": "success", "bucket": bucket, "key": key, "message": "삭제 완료"}, ensure_ascii=False)
+    return json.dumps({"status": "success", "bucket": bucket, "key": key, "message": "Deleted successfully"}, ensure_ascii=False)
 
 
 @mcp.tool()
@@ -820,12 +819,12 @@ def get_s3_presigned_url(
     key: str,
     expires_in: int = 3600,
 ) -> str:
-    """S3 오브젝트의 임시 다운로드 URL(Presigned URL)을 생성합니다.
+    """Generate a presigned (temporary) download URL for an S3 object.
 
     Args:
-        bucket: S3 버킷 이름
-        key: 파일 경로 (예: reports/result.pdf)
-        expires_in: URL 유효 시간(초), 기본 3600초(1시간)
+        bucket: S3 bucket name
+        key: Object key path (e.g. reports/result.pdf)
+        expires_in: URL expiry time in seconds (default 3600 = 1 hour)
     """
     s3 = _s3()
     url = s3.generate_presigned_url(
@@ -870,11 +869,11 @@ def list_bedrock_models(
     region: str = "us-east-1",
     provider: str = "",
 ) -> str:
-    """AWS Bedrock에서 사용 가능한 파운데이션 모델 목록을 조회합니다.
+    """List available foundation models on AWS Bedrock.
 
     Args:
-        region: AWS 리전 (Bedrock은 us-east-1 또는 us-west-2 권장)
-        provider: 공급자 필터 (예: Anthropic, Amazon, Meta, Mistral AI, 비워두면 전체)
+        region: AWS region (us-east-1 or us-west-2 recommended for Bedrock)
+        provider: Provider filter (e.g. Anthropic, Amazon, Meta, Mistral AI — leave blank for all)
     """
     bedrock = _bedrock(region)
     kwargs = {"byOutputModality": "TEXT"}
@@ -901,13 +900,13 @@ def invoke_bedrock_claude(
     max_tokens: int = 1024,
     region: str = "us-east-1",
 ) -> str:
-    """AWS Bedrock을 통해 Claude 모델을 호출합니다.
+    """Invoke a Claude model via AWS Bedrock.
 
     Args:
-        prompt: 모델에게 보낼 메시지
-        model_id: Bedrock 모델 ID (기본: Claude 3.5 Sonnet v2)
-        max_tokens: 최대 응답 토큰 수
-        region: AWS 리전
+        prompt: Message to send to the model
+        model_id: Bedrock model ID (default: Claude 3.5 Sonnet v2)
+        max_tokens: Maximum number of tokens in the response
+        region: AWS region
     """
     runtime = _bedrock_runtime(region)
     body = json.dumps({
@@ -937,12 +936,12 @@ def invoke_bedrock_model_raw(
     body: str,
     region: str = "us-east-1",
 ) -> str:
-    """AWS Bedrock 모델을 raw JSON body로 직접 호출합니다. Claude 외 다른 모델(Titan, Llama 등) 사용 시 활용합니다.
+    """Invoke any Bedrock model with a raw JSON body. Use for non-Claude models (Titan, Llama, etc.).
 
     Args:
-        model_id: Bedrock 모델 ID
-        body: 모델별 요청 JSON 문자열
-        region: AWS 리전
+        model_id: Bedrock model ID
+        body: Request JSON string in the model's expected format
+        region: AWS region
     """
     runtime = _bedrock_runtime(region)
     resp = runtime.invoke_model(
@@ -957,7 +956,7 @@ def invoke_bedrock_model_raw(
 
 @mcp.tool()
 def list_bedrock_knowledge_bases(region: str = "us-east-1") -> str:
-    """Bedrock Knowledge Base 목록을 조회합니다."""
+    """List Bedrock Knowledge Bases."""
     agent_client = boto3.client(
         "bedrock-agent",
         region_name=region,
@@ -985,13 +984,13 @@ def query_bedrock_knowledge_base(
     model_id: str = "anthropic.claude-3-5-sonnet-20241022-v2:0",
     region: str = "us-east-1",
 ) -> str:
-    """Bedrock Knowledge Base에 질문하고 RAG 기반 답변을 받습니다.
+    """Query a Bedrock Knowledge Base and get a RAG-based answer.
 
     Args:
         knowledge_base_id: Knowledge Base ID
-        query: 질문 내용
-        model_id: 답변 생성에 사용할 모델 ID
-        region: AWS 리전
+        query: Question to ask
+        model_id: Model ID to use for generating the answer
+        region: AWS region
     """
     agent_runtime = boto3.client(
         "bedrock-agent-runtime",
