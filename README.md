@@ -10,40 +10,25 @@ An MCP server that lets you control AWS resources directly from **Claude Desktop
 
 ## Installation
 
-```cmd
+```bash
 pip install claude-aws-mcp
 ```
-
-> Requires Python 3.10 or higher.
 
 ---
 
-## Quick Start (Windows)
+## Setup
 
-### Prerequisites
+**Step 1.** Create a `.env` file in your working directory:
 
-- [Python 3.10+](https://www.python.org/downloads/) — check **"Add Python to PATH"** during install
-- [Git](https://git-scm.com/download/win)
-
-### 1. Install the package
-
-```cmd
-pip install claude-aws-mcp
-```
-
-### 2. Create a `.env` file
-
-Create a file named `.env` in your working directory:
-
-```env
+```bash
 AWS_ACCESS_KEY_ID=your_access_key
 AWS_SECRET_ACCESS_KEY=your_secret_key
 AWS_DEFAULT_REGION=ap-northeast-2
 ```
 
-### 3. Run the server
+**Step 2.** Run the MCP server:
 
-```cmd
+```bash
 aws-mcp
 ```
 
@@ -58,9 +43,7 @@ Config file location:
 | Windows | `%APPDATA%\Claude\claude_desktop_config.json` |
 | Mac | `~/Library/Application Support/Claude/claude_desktop_config.json` |
 
-> On Windows, paste `%APPDATA%\Claude\` into the Explorer address bar to navigate there directly.
-
-Add the following to `claude_desktop_config.json`:
+Add this to `claude_desktop_config.json`:
 
 ```json
 {
@@ -83,11 +66,11 @@ Restart Claude Desktop — the AWS tools will appear automatically.
 
 ## Claude Code Integration
 
-```cmd
+```bash
 claude mcp add aws aws-mcp
 ```
 
-Or add directly to `.claude\settings.json`:
+Or add directly to `.claude/settings.json`:
 
 ```json
 {
@@ -109,7 +92,7 @@ Or add directly to `.claude\settings.json`:
 | `list_security_groups` | List all security groups with inbound/outbound rules |
 | `get_my_public_ip` | Get the current public IP address |
 | `add_my_ip_to_security_group` | Add current IP to a specified security group |
-| `remove_ip_from_security_group` | Remove a specific CIDR rule from a security group (supports port ranges, e.g. `0-65535`) |
+| `remove_ip_from_security_group` | Remove a specific CIDR rule (supports port ranges e.g. `0-65535`) |
 | `create_security_group` | Create a new security group |
 
 ### EC2 Instances
@@ -177,17 +160,13 @@ Add my current IP to sg-0abc1234 on port 22
 Remove 0.0.0.0/0 from sg-0abc1234 on port range 0-65535
 List all running EC2 instances
 Stop instance i-0abc1234
-Create a t3.micro instance
 List all S3 buckets
 Generate a presigned URL for my-bucket/report.pdf
-Ask Claude via Bedrock: "Summarize the AWS Well-Architected Framework"
 ```
 
 ---
 
-## IAM Permissions
-
-Your AWS IAM user needs the following policies:
+## IAM Permissions Required
 
 | Service | Recommended Policy |
 |---|---|
@@ -199,23 +178,15 @@ Your AWS IAM user needs the following policies:
 
 ## Troubleshooting
 
-**`aws-mcp` command not found after install**
-- Close and reopen CMD, then retry
-- Or run: `python -m aws_mcp.server`
+**`aws-mcp` command not found**
 
-**`pip` errors**
-```cmd
-python -m pip install --upgrade pip
-pip install claude-aws-mcp
+```bash
+pip install --upgrade claude-aws-mcp
 ```
 
 **AWS authentication errors**
 - Check that your `.env` values are correct
 - Confirm the IAM user has the required permissions
-
-**Python not found**
-- Reinstall Python and make sure **"Add Python to PATH"** is checked
-- Verify with: `python --version`
 
 ---
 

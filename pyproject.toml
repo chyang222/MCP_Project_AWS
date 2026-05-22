@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "claude-aws-mcp"
-version = "0.1.1"
+version = "0.1.2"
 description = "MCP server to control AWS resources directly from Claude Desktop or Claude Code"
 readme = "README.md"
 requires-python = ">=3.10"
